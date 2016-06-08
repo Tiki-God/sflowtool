@@ -182,7 +182,7 @@ typedef struct _SFForwardingTarget6 {
   int sock;
 } SFForwardingTarget6;
 
-typedef enum { SFLFMT_FULL=0, SFLFMT_PCAP, SFLFMT_LINE, SFLFMT_NETFLOW, SFLFMT_FWD, SFLFMT_CLF, SFLFMT_SCRIPT } EnumSFLFormat;
+typedef enum { SFLFMT_FULL=0, SFLFMT_PCAP, SFLFMT_LINE, SFLFMT_NETFLOW, SFLFMT_FWD, SFLFMT_CLF, SFLFMT_SCRIPT, SFLFMT_JSON } EnumSFLFormat;
 
 typedef struct _SFConfig {
   /* sflow(R) options */
@@ -694,6 +694,47 @@ static void writeFlowLine(SFSample *sample)
 	    sample->meanSkipCount) < 0) {
     exit(-44);
   }
+}
+
+/*_________________---------------------------__________________
+  _________________    writeJsonFlowLine      __________________
+  -----------------___________________________------------------
+*/
+
+static void writeJsonFlowLine(SFSample *sample)
+{
+  char srcIP[51], dstIP[51], hostIP[51];
+  /* Manually constructing the JSON output as it's static, rather
+   * than linking in a separate library */
+  printf("{ \"type\": \"FLOW\", "
+   "\"pkt_time\": %ld, "
+   "\"ether_type\": %d, "
+   "\"src_ip\": \"%s\", "
+   "\"src_port\": %d, "
+   "\"dst_ip\": \"%s\", "
+   \"\"dst_port\": %d, "
+   "\"ip_proto\": %d, "
+   "\"ttl\": %d, "
+   "\"tcp_flags\": %d, "
+   "\"ip_tos\": %d, "
+   "\"pkt_size\": %d, "
+   "\"pkt_size2\": %d, "
+   "\"skip_rate\": %d, "
+   "\"host\": \"%s\" }\n",
+   (long)sample->readTimestamp,
+   sample->eth_type,
+   printAddress(&sample->ipsrc, srcIP),
+   sample->dcd_sport,
+   printAddress(&sample->ipdst, dstIP),
+   sample->dcd_dport,
+   sample->dcd_ipProtocol,
+   sample->dcd_ipTTL,
+   sample->dcd_tcpFlags,
+   sample->dcd_ipTos,
+   sample->sampledPacketSize,
+   sample->sampledPacketSize - sample->stripped - sample->offsetToIPV4,
+   sample->meanSkipCount,
+   printAddress(&sample->agent_addr, hostIP));
 }
 
 /*_________________---------------------------__________________
@@ -2912,6 +2953,9 @@ static void readFlowSample(SFSample *sample, int expanded)
       /* or line-by-line output... */
       writeFlowLine(sample);
       break;
+    case SFLFMT_JSON:
+      writeJsonFlowLine(sample);
+      break;
     case SFLFMT_CLF:
       if(sfCLF.valid) {
 	if(printf("%s %s\n", sfCLF.client, sfCLF.http_log) < 0) {
@@ -4736,6 +4780,7 @@ static void instructions(char *command)
   fprintf(ERROUT, "   -l                 -  (output in line-by-line CSV format)\n");
   fprintf(ERROUT, "   -g                 -  (output in 'grep-friendly' format)\n");
   fprintf(ERROUT, "   -H                 -  (output HTTP common log file format)\n");
+  fprintf(ERROUT, "   -j                 -  (output in JSON format)\n");
   fprintf(ERROUT,"\n");
   fprintf(ERROUT,"tcpdump output:\n");
   fprintf(ERROUT, "   -t                 -  (output in binary tcpdump(1) format)\n");
@@ -4801,6 +4846,7 @@ static void process_command_line(int argc, char *argv[])
     in = argv[arg++][1];
     /* check first that options with/without arguments are correct */
     switch(in) {
+    case 'j':
     case 't':
     case 'l':
     case 'g':
@@ -4828,6 +4874,7 @@ static void process_command_line(int argc, char *argv[])
 
     switch(in) {
     case 'p': sfConfig.sFlowInputPort = atoi(argv[arg++]); break;
+    case 'j': sfConfig.outputFormat = SFLFMT_JSON; break;
     case 't': sfConfig.outputFormat = SFLFMT_PCAP; break;
     case 'l': sfConfig.outputFormat = SFLFMT_LINE; break;
     case 'H': sfConfig.outputFormat = SFLFMT_CLF; break;
