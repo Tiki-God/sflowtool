@@ -707,12 +707,12 @@ static void writeJsonFlowLine(SFSample *sample)
   /* Manually constructing the JSON output as it's static, rather
    * than linking in a separate library */
   printf("{ \"type\": \"FLOW\", "
-   "\"pkt_time\": %ld, "
+   "\"time\": %ld, "
    "\"ether_type\": %d, "
    "\"src_ip\": \"%s\", "
    "\"src_port\": %d, "
    "\"dst_ip\": \"%s\", "
-   \"\"dst_port\": %d, "
+   "\"dst_port\": %d, "
    "\"ip_proto\": %d, "
    "\"ttl\": %d, "
    "\"tcp_flags\": %d, "
@@ -772,6 +772,58 @@ static void writeCountersLine(SFSample *sample)
     exit(-46);
   }
 }
+
+/*_________________-----------------------------__________________
+  _________________    writeJsonCountersLine    __________________
+  -----------------_____________________________------------------
+*/
+static void writeJsonCountersLine(SFSample *sample)
+{
+  char agentIP[51];
+
+  printf("{ \"type\": \"CNTR\", "
+         "\"host\": \"%s\", "
+         "\"ifIndex\": %u, "
+         "\"ifType\": %u, "
+         "\"ifSpeed\": %lu, "
+         "\"ifDirection\": %u, "
+         "\"ifStatus\": %u, "
+         "\"ifInOctets\": %lu, "
+         "\"ifInUcastPkts\": %u, "
+         "\"ifInMulticastPkts\": %u, "
+         "\"ifInBroadcastPkts\": %u, "
+         "\"ifInDiscards\": %u, "
+         "\"ifInErrors\": %u, "
+         "\"ifInUnknowProtos\": %u, "
+         "\"ifOutOctets\": %lu, "
+         "\"ifOutUcastPkts\": %u, "
+         "\"ifOutMulticastPkts\": %u, "
+         "\"ifOutBroadcastPkts\": %u, "
+         "\"ifOutDiscards\": %u, "
+         "\"ifOutErrors\": %u, "
+         "\"ifPromiscMode\": %u }\n",
+         printAddress(&sample->agent_addr, agentIP),
+         sample->ifCounters.ifIndex,
+         sample->ifCounters.ifType,
+         sample->ifCounters.ifSpeed,
+         sample->ifCounters.ifDirection,
+         sample->ifCounters.ifStatus,
+         sample->ifCounters.ifInOctets,
+         sample->ifCounters.ifInUcastPkts,
+         sample->ifCounters.ifInMulticastPkts,
+         sample->ifCounters.ifInBroadcastPkts,
+         sample->ifCounters.ifInDiscards,
+         sample->ifCounters.ifInErrors,
+         sample->ifCounters.ifInUnknownProtos,
+         sample->ifCounters.ifOutOctets,
+         sample->ifCounters.ifOutUcastPkts,
+         sample->ifCounters.ifOutMulticastPkts,
+         sample->ifCounters.ifOutBroadcastPkts,
+         sample->ifCounters.ifOutDiscards,
+         sample->ifCounters.ifOutErrors,
+         sample->ifCounters.ifPromiscuousMode);
+}
+
 
 /*_________________---------------------------__________________
   _________________    receiveError           __________________
@@ -3870,6 +3922,7 @@ static void readCountersSample_v2v4(SFSample *sample)
   }
   /* line-by-line output... */
   if(sfConfig.outputFormat == SFLFMT_LINE) writeCountersLine(sample);
+  if(sfConfig.outputFormat == SFLFMT_JSON) writeJsonCountersLine(sample);
 }
 
 /*_________________---------------------------__________________
@@ -3957,6 +4010,7 @@ static void readCountersSample(SFSample *sample, int expanded)
   lengthCheck(sample, "counters_sample", sampleStart, sampleLength);
   /* line-by-line output... */
   if(sfConfig.outputFormat == SFLFMT_LINE) writeCountersLine(sample);
+  if(sfConfig.outputFormat == SFLFMT_JSON) writeJsonCountersLine(sample);
 }
 
 /*_________________---------------------------__________________
