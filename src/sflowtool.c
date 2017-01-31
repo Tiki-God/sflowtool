@@ -720,7 +720,7 @@ static void writeJsonFlowLine(SFSample *sample)
    "\"pkt_size\": %d, "
    "\"pkt_size2\": %d, "
    "\"skip_rate\": %d, "
-   "\"host\": \"%s\" }\n",
+   "\"sfhost\": \"%s\" }\n",
    (long)sample->readTimestamp,
    sample->eth_type,
    printAddress(&sample->ipsrc, srcIP),
@@ -782,7 +782,7 @@ static void writeJsonCountersLine(SFSample *sample)
   char agentIP[51];
 
   printf("{ \"type\": \"CNTR\", "
-         "\"host\": \"%s\", "
+         "\"sfHost\": \"%s\", "
          "\"ifIndex\": %u, "
          "\"ifType\": %u, "
          "\"ifSpeed\": %lu, "
