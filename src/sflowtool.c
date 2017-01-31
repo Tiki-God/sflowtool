@@ -720,7 +720,7 @@ static void writeJsonFlowLine(SFSample *sample)
    "\"pkt_size\": %d, "
    "\"pkt_size2\": %d, "
    "\"skip_rate\": %d, "
-   "\"sfhost\": \"%s\" }\n",
+   "\"sfHost\": \"%s\" }\n",
    (long)sample->readTimestamp,
    sample->eth_type,
    printAddress(&sample->ipsrc, srcIP),
